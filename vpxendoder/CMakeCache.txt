@@ -143,7 +143,7 @@ CMAKE_PROJECT_DESCRIPTION:STATIC=
 CMAKE_PROJECT_HOMEPAGE_URL:STATIC=
 
 //Value Computed by CMake
-CMAKE_PROJECT_NAME:STATIC=vpx_encoder
+CMAKE_PROJECT_NAME:STATIC=x265_encoder
 
 //Path to a program.
 CMAKE_RANLIB:FILEPATH=/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ranlib
@@ -221,6 +221,15 @@ vpx_encoder_IS_TOP_LEVEL:STATIC=ON
 
 //Value Computed by CMake
 vpx_encoder_SOURCE_DIR:STATIC=/Users/bytedance/code/my/media2/vpxendoder
+
+//Value Computed by CMake
+x265_encoder_BINARY_DIR:STATIC=/Users/bytedance/code/my/media2/vpxendoder
+
+//Value Computed by CMake
+x265_encoder_IS_TOP_LEVEL:STATIC=ON
+
+//Value Computed by CMake
+x265_encoder_SOURCE_DIR:STATIC=/Users/bytedance/code/my/media2/vpxendoder
 
 
 ########################
