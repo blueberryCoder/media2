@@ -1,5 +1,2 @@
-CMakeLists.txt
-res/
-doc/
-*.cpp
-.vscode/
+CMakeFiles/
+CMakeCache.txt
