@@ -1,0 +1,1 @@
+~/local/bin/x264  -o akiyo.264 --input-res=352x288   --input-csp=i420 --input-depth=8   akiyo_cif.yuv

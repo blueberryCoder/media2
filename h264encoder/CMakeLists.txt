@@ -1,0 +1,18 @@
+cmake_minimum_required(VERSION 3.14)
+project(x264_encoder)
+set(CMAKE_CXX_STANDARD 11)            # Enable c++11 standard
+
+set(CMAKE_BUILD_TYPE Debug)
+set(SOURCE_FILES X264Encoder.cpp)
+# message("$CMAKE_PROGRAM_PATH:" ${CMAKE_PROGRAM_PATH})
+# set(CMAKE_PROGRAM_PATH ${CMAKE_PROGRAM_PATH} /Users/bytedance/local/lib)
+# message("$CMAKE_PROGRAM_PATH:" ${CMAKE_PROGRAM_PATH})
+# https://cmake.org/cmake/help/latest/module/FindPkgConfig.html
+# https://zhuanlan.zhihu.com/p/111155574
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(x264 REQUIRED IMPORTED_TARGET x264 )
+
+
+add_executable(x264_encoder ${SOURCE_FILES})
+
+target_link_libraries(${PROJECT_NAME} PRIVATE PkgConfig::x264)
