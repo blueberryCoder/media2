@@ -4,147 +4,164 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <iomanip>
-#include <x265.h>
+
+#include <vpx/vpx_encoder.h>
+#include <vpx/vp8cx.h>
+#
+#define fourcc 0x30385056
+
+#define interface (&vpx_codec_vp8_cx_algo)
+
+#define log(msg) std::cout << msg << std::endl
+
+static void mem_put_le16(char *mem, unsigned int val)
+{
+    mem[0] = val;
+    mem[1] = val >> 8;
+}
+
+static void mem_put_le32(char *mem, unsigned int val)
+{
+    mem[0] = val;
+    mem[1] = val >> 8;
+    mem[2] = val >> 16;
+    mem[3] = val >> 24;
+}
+
+static void write_ivf_file_header(FILE *outFile, const vpx_codec_enc_cfg_t *cfg, int frame_cnt)
+{
+    if (cfg->g_pass != VPX_RC_ONE_PASS && cfg->g_pass != VPX_RC_LAST_PASS)
+    {
+        return;
+    }
+    char header[32];
+    header[0] = 'D';
+    header[1] = 'K';
+    header[2] = 'I';
+    header[3] = 'F';
+    mem_put_le16(header + 4, 0);                    // version
+    mem_put_le16(header + 6, 32);                   // headersize;
+    mem_put_le32(header + 8, fourcc);               // headersize;
+    mem_put_le16(header + 12, cfg->g_w);            // width
+    mem_put_le16(header + 14, cfg->g_h);            // height
+    mem_put_le32(header + 16, cfg->g_timebase.den); // rate
+    mem_put_le32(header + 20, cfg->g_timebase.num); // scale
+    mem_put_le32(header + 24, frame_cnt);           // length;
+    mem_put_le32(header + 28, 0);                   // unused;
+
+    fwrite(header, 32, 1, outFile);
+}
+
+static void write_ivf_frame_header(FILE *outFile, const vpx_codec_cx_pkt_t *pkt)
+{
+    char header[12];
+    vpx_codec_pts_t pts;
+    if (pkt->kind != VPX_CODEC_CX_FRAME_PKT)
+    {
+        return;
+    }
+    pts = pkt->data.frame.pts;
+    mem_put_le32(header, pkt->data.frame.sz);
+    mem_put_le32(header + 4, pts & 0xFFFFFFFF);
+    mem_put_le32(header + 8, pts >> 32);
+
+    fwrite(header, 1, 12, outFile);
+}
 
 // https://blog.csdn.net/leixiaohua1020/article/details/42079101
+// I420: https://blog.csdn.net/leixiaohua1020/article/details/12234821
 int main(int argv, const char *args[])
 {
-    FILE *fp_src = fopen("res/akiyo_cif.yuv", "rb");
-    FILE *fp_dst = fopen("res/akiyo_cif_code.h265", "wb");
+    FILE *fp_src = fopen("../res/akiyo_cif.yuv", "rb");
+    FILE *fp_dst = fopen("./akiyo_cif_code.vp8", "wb");
 
     // 352x288
     int width = 352;
     int height = 288;
-    int csp = X265_CSP_I420;
+    int csp = VPX_IMG_FMT_I420;
     // 设置为0，会根据文件大小计算帧数
     // 如果帧数设置的太小，可能会造成没有编码后的结果
-    int frameNum = 0;
+    // int frameNum = 0;
+    int frame_cnt = 0;
+    int flags = 0;
 
     if (fp_src && fp_dst)
     {
-        x265_param *pParam = x265_param_alloc();
-        // 设置参数
-        x265_param_default(pParam);
-        pParam->bRepeatHeaders = 1;
-        pParam->internalCsp = csp;
-        pParam->sourceWidth = width;
-        pParam->sourceHeight = height;
-        pParam->fpsNum = 24;
-        pParam->fpsDenom = 1;
-
-        // 打开编码器
-        x265_encoder *pHander = x265_encoder_open(pParam);
-        if (pHander == nullptr)
+        vpx_image_t raw;
+        if (!vpx_img_alloc(&raw, VPX_IMG_FMT_I420, width, height, 1))
         {
-            std::cout << "open encoder error." << std::endl;
+            log("Error open files");
             return -1;
         }
-        int ySize = width * height;
-        // 根据资源的大小设置的尺寸
-        x265_picture *pPic_in = x265_picture_alloc();
-        x265_picture_init(pParam, pPic_in);
-        char * buff = nullptr;
-        switch (csp)
+        std::cout << "Using: " << vpx_codec_iface_name(interface) << std::endl;
+        vpx_codec_enc_cfg_t cfg;
+        int ret = vpx_codec_enc_config_default(interface, &cfg, 0);
+        if (ret != VPX_CODEC_OK)
         {
-        case X265_CSP_I420:
-            buff = new char[ySize * 3];
-            pPic_in -> planes[0] = buff;
-            pPic_in -> planes[1] = buff + ySize;
-            pPic_in -> planes[2] = buff + ySize* 5 /4;
-            pPic_in -> stride[0] = width;
-            pPic_in -> stride[1] = width/2;
-            pPic_in -> stride[2] = width/2;
-            break;
-        
-        default:
-            break;
+            log("Error config ");
+            return -1;
         }
-        // 计算帧数
-        if (frameNum == 0)
-        {
-            switch (csp)
-            {
-            case X265_CSP_I420:
-                fseek(fp_src, 0, SEEK_END);
-                frameNum = ftell(fp_src) / (ySize * 3 / 2);
-                fseek(fp_src, 0, SEEK_SET);
-                break;
+        cfg.rc_target_bitrate = 800;
+        cfg.g_w = width;
+        cfg.g_h = height;
 
-            default:
-                std::cout << "Colorespace are not support." << std::endl;
-                return -1;
-            }
+        write_ivf_file_header(fp_dst, &cfg, 0); // frame count 0 ?
+        vpx_codec_ctx_t codec;
+        // Initialize codec .
+        if (vpx_codec_enc_init(&codec, interface, &cfg, 0) != VPX_CODEC_OK)
+        {
+            log("Failed to initialize encoder");
         }
-
-        x265_nal *pNals = nullptr;
-        uint32_t iNal = 0;
-        // Loop to encode
-        for (int i = 0; i < frameNum; i++)
+        int frame_avail = 1;
+        int got_data = 0;
+        int y_size = width * height;
+        while (frame_avail || got_data)
         {
-            switch (csp)
+            vpx_codec_iter_t iter = nullptr;
+            if (fread(raw.planes[0], 1, y_size * 3 / 2, fp_src) != y_size * 3 / 2)
             {
-            case X265_CSP_I420:
-                // https://www.cplusplus.com/reference/cstdio/fseek/
-                fread(pPic_in->planes[0], ySize, 1, fp_src);     // Y
-                fread(pPic_in->planes[1], ySize / 4, 1, fp_src); // U
-                fread(pPic_in->planes[2], ySize / 4, 1, fp_src); // V
-                break;
-
-            default:
-                std::cout << "Coloresapce are not support." << std::endl;
-                return -1;
+                frame_avail = 0;
             }
-            // PTS VS DTS
-            // https://bitmovin.com/docs/encoding/faqs/why-is-an-timestamp-offset-for-ts-muxings-applied-by-default
-            // pPic_in->i_pts = i;
-
-            int ret = x265_encoder_encode(pHander, &pNals, &iNal, pPic_in,nullptr);
-            if (ret < 0)
+            if (frame_avail)
             {
-                std::cout << "Error encode." << std::endl;
-                return -1;
-            }
-            std::cout << "success encode frame" << std::setw(5) << i << std::endl;
-            for (int j = 0; j < iNal; j++)
-            {
-                std::cout << "write nal to file" << std::setw(5) << j << std::endl;
-                fwrite(pNals[j].payload, 1, pNals[j].sizeBytes, fp_dst);
-            }
-        }
-        std::cout << "to flush" << std::endl;
-        // flush
-        while (true)
-        {
-            int ret = x265_encoder_encode(pHander, &pNals, &iNal, pPic_in,nullptr);
-            if (ret == 0)
-            {
-                break;
-            }
-            else if (ret < 0)
-            {
-                std::cout << "Error encode ." << std::endl;
-                break;
+                ret = vpx_codec_encode(&codec, &raw, frame_cnt, 1, flags, VPX_DL_REALTIME);
             }
             else
             {
-                std::cout << "Flush 1 frame." << std::endl;
-                for (int j = 0; j < iNal; j++)
-                {
-                    fwrite(pNals[j].payload, 1, pNals[j].sizeBytes, fp_dst);
-                }
-                break;
+                ret = vpx_codec_encode(&codec, nullptr, frame_cnt, 1, flags, VPX_DL_REALTIME);
             }
+
+            if (ret)
+            {
+                log("Failed to  encode frame.");
+                return -1;
+            }
+            got_data = 0;
+            const vpx_codec_cx_pkt_t *pkt;
+            while ((pkt = vpx_codec_get_cx_data(&codec, &iter)))
+            {
+                got_data = 1;
+                switch (pkt->kind)
+                {
+                case VPX_CODEC_CX_FRAME_PKT:
+                    write_ivf_frame_header(fp_dst, pkt);
+                    fwrite(pkt->data.frame.buf, 1, pkt->data.frame.sz, fp_dst);
+                    break;
+
+                default:
+                    break;
+                }
+            }
+            std::cout << "Succeed encode frame: " << frame_cnt << std::endl;
+            frame_cnt++;
         }
-
-        // clean
-        std::cout << "to clean resource" << std::endl;
-        x265_encoder_close(pHander);
-        x265_picture_free(pPic_in);
-        x265_param_free(pParam);
-        delete[] buff;
-        pHander = nullptr;
-
+        vpx_img_free(&raw);
         fclose(fp_src);
+        vpx_codec_destroy(&codec);
+        if (!fseek(fp_dst, 0, SEEK_SET))
+        {
+            write_ivf_file_header(fp_dst, &cfg, frame_cnt - 1);
+        }
         fclose(fp_dst);
         return 0;
     }
@@ -153,7 +170,7 @@ int main(int argv, const char *args[])
         char *buffer;
         if ((buffer = getcwd(nullptr, 0)) == nullptr)
         {
-            std::cout << "get cwd error." << std::endl;
+            log("get cwd error.");
             free(buffer);
         }
         else

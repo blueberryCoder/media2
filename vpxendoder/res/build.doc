@@ -1,1 +1,6 @@
- x265 -o akiyo.265 --fps=24 --input-res=352x288 --input-csp=i420 --input-depth=8 akiyo_cif.yuv
+## 命令测试vpx例：
+vpxenc --codec=vp8 -w 352 -h 288  -o akiyo1.vpx akiyo_cif.yuv
+## 构建工程
+1. mkdir build
+2. cd build 
+3. cmake ../ && cmake --build . 
