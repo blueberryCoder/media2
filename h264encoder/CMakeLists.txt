@@ -10,7 +10,6 @@ set(SOURCE_FILES X264Encoder.cpp)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(x264 REQUIRED IMPORTED_TARGET x264 )
 
-
 add_executable(x264_encoder ${SOURCE_FILES})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE PkgConfig::x264)
