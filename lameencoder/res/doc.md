@@ -1,0 +1,1 @@
+ffplay  -channels 2 -f s16le -i ./vocal.pcm
