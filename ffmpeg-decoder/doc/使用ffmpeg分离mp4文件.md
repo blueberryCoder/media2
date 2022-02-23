@@ -23,21 +23,21 @@ libpostproc    56.  0.100 / 56.  0.100
     - 使用av_find_best_stream寻找视频流在AVFormatCondex中的index
     - 根据index获取到Stream。如:
     `AVStream *stream = format_context_->streams[*stream_index];`
-3. 根据获取到的流信息找到合适的编码器，并创建编码器上下文
+3. 根据获取到的流信息找到合适的编码器并创建编码器上下文
     - 使用avcodec_find_decoder找到编码器。如：
     `const AVCodec *codec = avcodec_find_decoder(stream->codecpar->codec_id);`
     - 使用avcodec_alloc_context3创建编码器上下文：
     `*codec_context = avcodec_alloc_context3(codec);`
     - 使用avcodec_parameters_to_context将流中包含的一些信息如视频format、width、height等复制到AVCodecContext。如：
     `avcodec_parameters_to_context(*codec_context, stream->codecpar)`
-4. 寻找音频流信息、创建音频编码器上下文，同上视频获取的方式。
+4. 寻找音频流信息、创建音频编码器上下文，方法同上视频获取的方式。
 5. 根据输出路径打开视频yuv文件输出流，音频pcm输出流。
 6. 分配AVPacket、AVFrame、图像buffer
     - 使用av_packet_alloc分配AVPacket
     - 使用av_frame_alloc分配AVFrame
     - 使用av_image_alloc分配图片buffer
 7. 使用av_read_frame开始读文件中的每一个packet
-8. 根据读到的packet判断是否为音频/视频，采用不同的解码器上下文进行解码
+8. 根据读到的packet判断是否为音频/视频采用不同的解码器上下文进行解码
     - 使用avcodec_send_packet发送AVPacket给解码器。
     - 使用avcodec_receive_frame接受解码的结果获得AVFrame。
 10. 将解码得到的AVFrame分别写入输出文件流
