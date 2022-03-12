@@ -129,7 +129,12 @@ int Demuxing::DecodePacket(AVCodecContext *codec_context) {
 int Demuxing::OutputAudioFrame(AVFrame *frame) {
     int unpadded_line_size = frame->nb_samples * av_get_bytes_per_sample(AVSampleFormat(frame->format));
     std::cout << vformat("Write audio frame %d,size=%d", this->audio_frame_counter++, unpadded_line_size) << std::endl;
-    output_audio_stream_.write(reinterpret_cast<const char *>(frame->extended_data[0]), unpadded_line_size);
+//    output_audio_stream_.write(reinterpret_cast<const char *>(frame->extended_data[0]), unpadded_line_size);
+    for(int i=0;i<unpadded_line_size;i+=4){
+        // 双声道
+        output_audio_stream_.write(reinterpret_cast<const char *>(frame->data[0]+i), 4);
+        output_audio_stream_.write(reinterpret_cast<const char *>(frame->data[1]+i), 4);
+    }
 }
 
 
