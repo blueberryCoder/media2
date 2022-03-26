@@ -18,6 +18,10 @@ add_library(glejni SHARED app.cpp
         surfacejni.h
         surfacejni.cpp
         logger.h
+        eglsurface.h
+        eglsurface.cpp
+        GLRender.h
+        GLRender.cpp
         )
 target_link_libraries(glejni
         log

@@ -10,6 +10,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.GLExampe">
         <activity
+            android:name=".EGLSurfaceActivity"
+            android:exported="false" />
+        <activity
             android:name=".SurfaceViewActivity"
             android:exported="false" />
         <activity

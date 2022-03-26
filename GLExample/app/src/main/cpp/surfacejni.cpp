@@ -13,16 +13,16 @@
 #include <unistd.h>
 #include "logger.h"
 
-JavaVM *gVm = nullptr;
-jobject gJavaSurface;
+static JavaVM *gVm = nullptr;
+static jobject gJavaSurface;
 #define RED  0xFFFF0000  // ABGR
 #define BLUE 0xFF0000FF
+
 void *threadRun(void *) {
     // thread run
     JNIEnv *env;
     gVm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
     gVm->AttachCurrentThread(&env, nullptr);
-
 
     ANativeWindow *nativeWindow = ANativeWindow_fromSurface(env, gJavaSurface);
     if (!nativeWindow) {

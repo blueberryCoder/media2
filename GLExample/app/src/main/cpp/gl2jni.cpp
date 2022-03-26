@@ -140,6 +140,7 @@ Java_com_blueberry_glexampe_GL2JNILib_step(JNIEnv *env, jclass clazz) {
     checkGlError("atrrib pointer.");
     glEnableVertexAttribArray(gPosition);
     checkGlError("glEnabled Vertext attrib array.");
+//    glDrawArrays(GL_LINE_LOOP,0,3);
     glDrawArrays(GL_TRIANGLES,0,3);
     checkGlError("glDrawArrays error.");
 }

@@ -20,4 +20,11 @@
         android:id="@+id/btnGlSurfaceView"
         android:text="SurfaceView"
         />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/btnEGLSurfaceView"
+        android:text="EGL Surface"
+        />
 </LinearLayout>
