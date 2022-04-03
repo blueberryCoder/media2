@@ -10,27 +10,28 @@ import android.view.SurfaceView;
 public class EGLSurfaceActivity extends AppCompatActivity {
 
     private SurfaceView mSurfaceView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mSurfaceView = new SurfaceView(this);
         setContentView(mSurfaceView);
-       mSurfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
-           @Override
-           public void surfaceCreated(@NonNull SurfaceHolder holder) {
-               EGLJNILib.init(holder.getSurface());
-           }
+        mSurfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
+            @Override
+            public void surfaceCreated(@NonNull SurfaceHolder holder) {
+                EGLJNILib.init(holder.getSurface());
+            }
 
-           @Override
-           public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int width, int height) {
+            @Override
+            public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int width, int height) {
 
-           }
+            }
 
-           @Override
-           public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
+            @Override
+            public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
 
-           }
-       });
+            }
+        });
     }
 
     @Override

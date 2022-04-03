@@ -100,7 +100,6 @@ Java_com_blueberry_glexampe_EGLJNILib_init(JNIEnv *env, jclass clazz, jobject jS
     }
     ANativeWindow_acquire(window);
     ANativeWindow_setBuffersGeometry(window, 0, 0, AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM);
-//    EGLSurface surface = nullptr;
     // screen on
     gSurface = eglCreateWindowSurface(display, eglConfig, window, 0);
     if (!gSurface) {
