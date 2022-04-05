@@ -166,7 +166,6 @@ public class AudioTrackActivity extends Activity {
         synchronized (lock){
             lock.notify();
         }
-
     }
 
     private void pause() {

@@ -19,7 +19,6 @@ public class MainActivity extends AppCompatActivity {
                 MainActivity.this.startActivity(intent);
             }
         });
-
         findViewById(R.id.btnMediaPlayerVideo).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -32,8 +31,15 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 Intent intent  = new Intent(MainActivity.this, AudioTrackActivity.class);
                 MainActivity.this.startActivity(intent);
-
             }
         });
+        findViewById(R.id.btnOpenSLES).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this,OpenSLActivity.class);
+                MainActivity.this.startActivity(intent);
+            }
+        });
+
     }
 }

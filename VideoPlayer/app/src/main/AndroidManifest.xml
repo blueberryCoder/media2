@@ -2,7 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.blueberry.videoplayer">
 
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
     <application
         android:allowBackup="true"
@@ -20,15 +22,18 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".MediaPlayerAudioActivity"
-            android:exported="false"
-            />
-        <activity android:name=".MediaPlayerVideoActivity"
-            android:exported="false"
-            />
-        <activity android:name=".AudioTrackActivity"
-            android:exported="false"
-            />
+        <activity
+            android:name=".MediaPlayerAudioActivity"
+            android:exported="false" />
+        <activity
+            android:name=".MediaPlayerVideoActivity"
+            android:exported="false" />
+        <activity
+            android:name=".AudioTrackActivity"
+            android:exported="false" />
+        <activity
+            android:name=".OpenSLActivity"
+            android:exported="false" />
     </application>
 
 </manifest>
