@@ -34,4 +34,11 @@
         android:id="@+id/btnOpenSLES"
         android:text="OPENSLES"
         />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/btnOpenSLMp3"
+        android:text="OPENSLES PLAY MPE"
+        />
 </LinearLayout>

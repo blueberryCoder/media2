@@ -16,5 +16,7 @@ add_library(videoplayer SHARED
         audio_player.cpp
         audio_recorder.h
         audio_recorder.cpp
+        jni_play_mp3_interfaces.h
+        jni_play_mp3_interfaces.cpp
         )
 target_link_libraries(videoplayer log OpenSLES)

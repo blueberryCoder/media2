@@ -13,6 +13,7 @@
         <entry key="app/src/main/res/layout/activity_media_player_audio.xml" value="0.31567028985507245" />
         <entry key="app/src/main/res/layout/activity_media_player_video.xml" value="0.31567028985507245" />
         <entry key="app/src/main/res/layout/activity_opensl.xml" value="0.31567028985507245" />
+        <entry key="app/src/main/res/layout/activity_opensl_play_mp3_audio.xml" value="0.31567028985507245" />
       </map>
     </option>
   </component>

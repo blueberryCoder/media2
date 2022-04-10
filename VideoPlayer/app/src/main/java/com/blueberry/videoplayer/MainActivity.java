@@ -40,6 +40,13 @@ public class MainActivity extends AppCompatActivity {
                 MainActivity.this.startActivity(intent);
             }
         });
+        findViewById(R.id.btnOpenSLMp3).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this,OpenSLMp3AudioActivity.class);
+                MainActivity.this.startActivity(intent);
+            }
+        });
 
     }
 }
