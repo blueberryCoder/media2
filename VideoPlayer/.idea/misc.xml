@@ -7,6 +7,7 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="app/src/main/res/layout/activity_audio_mediacodec_opensl.xml" value="0.31567028985507245" />
         <entry key="app/src/main/res/layout/activity_audio_track.xml" value="0.31567028985507245" />
         <entry key="app/src/main/res/layout/activity_main.xml" value="0.18541666666666667" />
         <entry key="app/src/main/res/layout/activity_media_player.xml" value="0.19947916666666668" />

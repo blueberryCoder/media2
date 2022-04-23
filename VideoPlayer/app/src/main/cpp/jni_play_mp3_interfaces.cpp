@@ -5,6 +5,10 @@
 #include "jni_play_mp3_interfaces.h"
 #include <SLES/OpenSLES_Android.h>
 #include <SLES/OpenSLES.h>
+
+#include <media/NdkMediaCodec.h>
+#include <media/NdkMediaExtractor.h>
+
 #include <cassert>
 #include <cstring>
 // http://supercurio.project-voodoo.org/ndk-docs/docs/opensles/
@@ -25,81 +29,9 @@ struct Mp3Engine {
 
 };
 
-static __inline__ void logSLresult(SLresult result, const char *tag) {
-
-    if (result != SL_RESULT_SUCCESS) {
-        switch (result) {
-            case SL_RESULT_PRECONDITIONS_VIOLATED    : {
-                LOGD("tag:%s,result:%s", tag, "SL_RESULT_PRECONDITIONS_VIOLATED");
-                break;
-            }
-            case SL_RESULT_PARAMETER_INVALID        : {
-                LOGD("tag:%s,result:%s", tag, "SL_RESULT_PARAMETER_INVALID");
-                break;
-            }
-            case SL_RESULT_MEMORY_FAILURE : {
-                LOGD("tag:%s,result:%s", tag, "SL_RESULT_MEMORY_FAILURE");
-                break;
-            }
-            case SL_RESULT_RESOURCE_ERROR : {
-                LOGD("tag:%s,result:%s", tag, "SL_RESULT_RESOURCE_ERROR");
-                break;
-            }
-            case SL_RESULT_RESOURCE_LOST : {
-                LOGD("tag:%s,result:%s", tag, "SL_RESULT_RESOURCE_LOST");
-                break;
-            }
-            case SL_RESULT_IO_ERROR : {
-                LOGD("tag:%s,result:%s", tag, "SL_RESULT_IO_ERROR");
-                break;
-            }
-            case SL_RESULT_BUFFER_INSUFFICIENT : {
-                LOGD("tag:%s,result:%s", tag, "SL_RESULT_BUFFER_INSUFFICIENT");
-                break;
-            }
-            case SL_RESULT_CONTENT_CORRUPTED : {
-                LOGD("tag:%s,result:%s", tag, "SL_RESULT_CONTENT_CORRUPTED");
-                break;
-            }
-            case SL_RESULT_CONTENT_UNSUPPORTED : {
-                LOGD("tag:%s,result:%s", tag, "SL_RESULT_CONTENT_UNSUPPORTED");
-                break;
-            }
-            case SL_RESULT_CONTENT_NOT_FOUND : {
-                LOGD("tag:%s,result:%s", tag, "SL_RESULT_CONTENT_NOT_FOUND");
-                break;
-            }
-            case SL_RESULT_PERMISSION_DENIED : {
-                LOGD("tag:%s,result:%s", tag, "SL_RESULT_PERMISSION_DENIED");
-                break;
-            }
-            case SL_RESULT_FEATURE_UNSUPPORTED : {
-                LOGD("tag:%s,result:%s", tag, "SL_RESULT_FEATURE_UNSUPPORTED");
-                break;
-            }
-            case SL_RESULT_INTERNAL_ERROR : {
-                LOGD("tag:%s,result:%s", tag, "SL_RESULT_INTERNAL_ERROR");
-                break;
-            }
-            case SL_RESULT_UNKNOWN_ERROR : {
-                LOGD("tag:%s,result:%s", tag, "SL_RESULT_UNKNOWN_ERROR");
-                break;
-            }
-            case SL_RESULT_OPERATION_ABORTED : {
-                LOGD("tag:%s,result:%s", tag, "SL_RESULT_OPERATION_ABORTED");
-                break;
-            }
-            case SL_RESULT_CONTROL_LOST : {
-                LOGD("tag:%s,result:%s", tag, "SL_RESULT_CONTROL_LOST");
-                break;
-            }
-        }
-    }
-} ;
 JNIEXPORT jlong JNICALL
 Java_com_blueberry_videoplayer_SLPlayMp3JniLib_initialize(JNIEnv *env, jobject thiz,
                                                           jstring file_path) {
-
     const char *cFilePath = env->GetStringUTFChars(file_path, 0);
     const char *fileUriPrefix = "file://";
 
@@ -193,6 +125,7 @@ Java_com_blueberry_videoplayer_SLPlayMp3JniLib_start(JNIEnv *env, jobject thiz, 
         return 0;
     }
     (*mp3Engine.slPlayItf_)->SetPlayState(mp3Engine.slPlayItf_, SL_PLAYSTATE_PLAYING);
+
     return 1;
 }
 

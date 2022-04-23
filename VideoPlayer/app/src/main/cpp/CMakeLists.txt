@@ -18,5 +18,7 @@ add_library(videoplayer SHARED
         audio_recorder.cpp
         jni_play_mp3_interfaces.h
         jni_play_mp3_interfaces.cpp
+        jni_mediacodec_audio.cpp
+        safe_queue.h
         )
-target_link_libraries(videoplayer log OpenSLES)
+target_link_libraries(videoplayer log OpenSLES mediandk android)

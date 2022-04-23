@@ -47,6 +47,12 @@ public class MainActivity extends AppCompatActivity {
                 MainActivity.this.startActivity(intent);
             }
         });
-
+        findViewById(R.id.btnMediaCodecOpenSL).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this,AudioMediaCodecOpenSlActivity.class);
+                MainActivity.this.startActivity(intent);
+            }
+        });
     }
 }
