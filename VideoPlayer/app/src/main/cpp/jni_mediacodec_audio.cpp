@@ -22,7 +22,6 @@
 #include "logger.h"
 #include "safe_queue.h"
 
-// https://www.jianshu.com/p/5d62a3cf0741
 extern "C" {
 
 #define TIMEOUT_US 2000
@@ -190,10 +189,7 @@ Java_com_blueberry_videoplayer_SLMediaCodecAudio_initialize(JNIEnv *env, jobject
     auto engine = new AudioPlayerEngine();
     env->GetJavaVM(&engine->javaVm);
     engine->buffer_queue_ = new SafeQueue<MyBuffer>();
-
-    // https://developer.android.com/ndk/reference/group/asset
     const char *fileName = env->GetStringUTFChars(res_path, NULL);
-
     auto cAssetManager = AAssetManager_fromJava(env, assetManager);
     engine->asset_ = AAssetManager_open(cAssetManager, fileName, AASSET_MODE_RANDOM);
     off_t start = 0, len = 0;
@@ -206,14 +202,11 @@ Java_com_blueberry_videoplayer_SLMediaCodecAudio_initialize(JNIEnv *env, jobject
     // because i am sure that my resource is only one track.
     auto format = AMediaExtractor_getTrackFormat(engine->mediaExtractor_, 0);
     const char *mime = nullptr;
-
     AMediaFormat_getString(format, AMEDIAFORMAT_KEY_MIME, reinterpret_cast<const char **>(&mime));
-
     AMediaFormat_getInt64(format, AMEDIAFORMAT_KEY_DURATION, &engine->metaData_.duration_);
     AMediaFormat_getInt32(format, AMEDIAFORMAT_KEY_CHANNEL_COUNT, &engine->metaData_.channelCount_);
     AMediaFormat_getInt32(format, AMEDIAFORMAT_KEY_SAMPLE_RATE, &engine->metaData_.sampleRate_);
     AMediaFormat_getInt32(format, AMEDIAFORMAT_KEY_BIT_RATE, &engine->metaData_.bitrate_);
-
 
     const char *formatStr = AMediaFormat_toString(format);
 
@@ -324,7 +317,6 @@ Java_com_blueberry_videoplayer_SLMediaCodecAudio_initialize(JNIEnv *env, jobject
     // create thread .
     pthread_create(&engine->thread_, nullptr, threadRun, engine);
     env->ReleaseStringUTFChars(res_path, fileName);
-
     return reinterpret_cast<long>(engine);
 }
 
@@ -381,7 +373,6 @@ void bufferQueueCallback(SLAndroidSimpleBufferQueueItf androidSimpleBufferQueueI
                 engine->androidSimpleBufferQueueItf_,
                 myBuffer.buf_,
                 myBuffer.len_);
-//        delete[] myBuffer.buf_;
     } else {
         (*engine->androidSimpleBufferQueueItf_)->Enqueue(
                 engine->androidSimpleBufferQueueItf_,
