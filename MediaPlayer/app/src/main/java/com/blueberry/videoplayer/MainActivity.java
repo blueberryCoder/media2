@@ -18,4 +18,10 @@ public class MainActivity extends AppCompatActivity {
                 }
         );
     }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        throw new RuntimeException("kill myself.");
+    }
 }

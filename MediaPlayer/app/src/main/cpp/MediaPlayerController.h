@@ -26,7 +26,8 @@
 class MediaPlayerController {
 
 public:
-    AAsset *asset = nullptr;
+    AAsset *audio_asset_ = nullptr;
+    AAsset *video_asset_ = nullptr;
     AMediaExtractor *audioExtractor = nullptr;
     AMediaExtractor *videoExtractor = nullptr;
     MyFormat audioFormat;

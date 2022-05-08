@@ -54,7 +54,7 @@ public class VideoPlayerActivity extends AppCompatActivity {
             public void surfaceCreated(@NonNull SurfaceHolder holder) {
                 Log.i(TAG, "surfaceCreated: holder:");
                 controller = new MediaPlayerController();
-                controller.init(holder.getSurface(),VideoPlayerActivity.this.getAssets(),"captain_women.mp4");
+                controller.init(holder.getSurface(),VideoPlayerActivity.this.getAssets(),"yewen.mp4");
             }
 
             @Override

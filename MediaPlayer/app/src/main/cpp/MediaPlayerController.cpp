@@ -10,23 +10,18 @@
 #include <chrono>
 #include <thread>
 
-#define LOG_LATER  false
-#define LOG_INPUT  false
-
-// https://rangaofei.github.io/2018/03/09/%E5%AE%89%E5%8D%93%E8%A7%A3%E7%A0%81%E5%99%A8MediaCodec%E8%A7%A3%E6%9E%90/
-//https://www.jianshu.com/p/c30a93b71ec0
 MediaPlayerController::MediaPlayerController() {
     silent_buf_[10] = {};
 }
 
 MediaPlayerController::~MediaPlayerController() {
-    AAsset_close(asset);
+    AAsset_close(audio_asset_);
+    AAsset_close(video_asset_);
     this->status_ = DESTROYED;
     AMediaCodec_delete(audioCodec);
     AMediaCodec_delete(videoCodec);
     AMediaExtractor_delete(audioExtractor);
     AMediaExtractor_delete(videoExtractor);
-
 }
 
 void MediaPlayerController::start() {
@@ -105,29 +100,28 @@ void MediaPlayerController::decodeAudioPacket() {
         if (index >= 0) {
             size_t size = 0;
             auto input_buffer = AMediaCodec_getInputBuffer(audioCodec, index, &size);
-            auto sample_size = AMediaExtractor_readSampleData(audioExtractor, input_buffer,
-                                                              size);
-            if (sample_size <= 0) {
-                LOGE("audio read complete: index = %d,sample_size=%d", index, sample_size);
-                // input is end
-                sample_size = 0;
-                audio_decode_input_end_ = true;
+            auto sample_size = AMediaExtractor_readSampleData(audioExtractor, input_buffer, size);
+            auto trackIndex = AMediaExtractor_getSampleTrackIndex(audioExtractor);
+            if (trackIndex == 1) {
+                if (sample_size <= 0) {
+                    LOGE("audio read complete: index = %d,sample_size=%d", index, sample_size);
+                    // input is end
+                    sample_size = 0;
+                    audio_decode_input_end_ = true;
+                }
+                auto pts = AMediaExtractor_getSampleTime(audioExtractor);
+                AMediaCodec_queueInputBuffer(audioCodec,
+                                             index,
+                                             0,
+                                             sample_size,
+                                             pts,
+                                             audio_decode_input_end_
+                                             ? AMEDIACODEC_BUFFER_FLAG_END_OF_STREAM : 0
+                );
+                AMediaExtractor_advance(audioExtractor);
+            } else {
+                LOGI("audio read sample track index is wrong track index is %ld", trackIndex);
             }
-
-            auto pts = AMediaExtractor_getSampleTime(audioExtractor);
-            AMediaCodec_queueInputBuffer(audioCodec,
-                                         index,
-                                         0,
-                                         sample_size,
-                                         pts,
-                                         audio_decode_input_end_
-                                         ? AMEDIACODEC_BUFFER_FLAG_END_OF_STREAM : 0
-            );
-            AMediaExtractor_advance(audioExtractor);
-            LOG_INPUT && LOGI("audio queueInputBuffer buffer input success index: %d", index);
-        } else {
-            // process error
-            LOG_INPUT && LOGE("audio get decode input failed index: %d", index);
         }
     }
     // decode
@@ -215,7 +209,8 @@ void MediaPlayerController::decodeVideoPacket() {
                                                                   size);
                 auto pts = AMediaExtractor_getSampleTime(videoExtractor);
                 if (sample_size <= 0) {
-                    LOGE("video read complete: index = %d,sample_size=%d,buffer size=%zu,pts=%lld", index, sample_size,size,pts);
+                    LOGE("video read complete: index = %d,sample_size=%d,buffer size=%zu,pts=%lld",
+                         index, sample_size, size, pts);
                     sample_size = 0;
                     video_decode_input_end_ = true;
                 }
@@ -230,15 +225,11 @@ void MediaPlayerController::decodeVideoPacket() {
                 );
                 if (video_decode_input_end_) {
                     AMediaCodec_flush(videoCodec);
-                }else{
-                    AMediaExtractor_advance(videoExtractor);
-                }
-            }
-        } else {
-            switch (index) {
-                case AMEDIACODEC_INFO_TRY_AGAIN_LATER:{break;}
-                default: {
-                    LOGI("audio decoder buffers default error .");
+                } else {
+                    auto more = AMediaExtractor_advance(videoExtractor);
+                    if (!more) {
+                        LOGI("video decoder advance no more.");
+                    }
                 }
             }
         }
@@ -316,7 +307,7 @@ void *MediaPlayerController::videoRenderThreadRun() {
     render.checkGlError("useProgram");
     GLuint glPosition = glGetAttribLocation(glProgram, "vPosition");
     glEnableVertexAttribArray(glPosition);
-    glVertexAttribPointer(glPosition, 3, GL_FLOAT, GL_FALSE, 0, render.getData());
+    glVertexAttribPointer(glPosition, 2, GL_FLOAT, GL_FALSE, 0, render.getData());
 
     // 纹理坐标
     static float fragment[] = {
@@ -362,11 +353,9 @@ void *MediaPlayerController::videoRenderThreadRun() {
 
     while (status_) {
         auto videoFrame = this->avSync_.dequeueVideoFrame();
-// https://developer.android.com/reference/android/media/MediaCodecInfo.CodecCapabilities#COLOR_FormatYUV420Flexible
         glActiveTexture(GL_TEXTURE0);
         render.checkGlError("glActiveTexture Y");
         glBindTexture(GL_TEXTURE_2D, texts[0]);
-        //替换纹理，比重新使用glTexImage2D性能高多
         glTexSubImage2D(GL_TEXTURE_2D, 0,
                         0, 0,//相对原来的纹理的offset
                         width, height,//加载的纹理宽度、高度。最好为2的次幂
@@ -398,7 +387,6 @@ void *MediaPlayerController::videoRenderThreadRun() {
 
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         eglSwapBuffers(this->eglDisplay, this->eglSurface);
-
         // delete [] buf
         delete[] videoFrame.buf_;
     }
@@ -406,7 +394,9 @@ void *MediaPlayerController::videoRenderThreadRun() {
     return 0;
 }
 
-void MediaPlayerController::detachEnv() { javaVm_->DetachCurrentThread(); }
+void MediaPlayerController::detachEnv() {
+    javaVm_->DetachCurrentThread();
+}
 
 void MediaPlayerController::attachEnv() {
     JNIEnv *env = nullptr;

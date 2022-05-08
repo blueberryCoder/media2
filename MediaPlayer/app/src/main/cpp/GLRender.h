@@ -9,12 +9,6 @@
 #include <GLES2/gl2ext.h>
 
 class GLRender {
-//    constexpr static auto gVertexShader =
-//            "attribute vec4 vPosition;\n"
-//            "void main() {\n"
-//            "  gl_Position = vPosition;\n"
-//            "}\n";
-
     constexpr static auto gVertexShader =
             "attribute vec4 vPosition;\n"     // 输入的顶点坐标
             "attribute vec2 aTextCoord;\n"    // 输入的纹理坐标
@@ -23,12 +17,6 @@ class GLRender {
             "  vTextCoord = vec2(aTextCoord.x,1.0 - aTextCoord.y);\n" // 上下反转y轴
             "  gl_Position = vPosition;\n"
             "}\n";
-
-//    constexpr static auto gFragmentShader =
-//            "precision mediump float;\n"
-//            "void main() {\n"
-//            "  gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);\n"
-//            "}\n";
 
     constexpr static auto gFragmentShader =
             "precision mediump float;\n"

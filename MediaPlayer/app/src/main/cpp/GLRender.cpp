@@ -84,11 +84,10 @@ GLfloat *GLRender::getData() {
 }
 
 GLRender::GLRender() {
-//    this->data_ = new GLfloat[]{0.0f, 0.5f, -0.5f, -0.5f, 0.5f, -0.5f};
-    this->data_ = new GLfloat[]{1.0f, -1.0f, 0.0f,
-                                -1.0f, -1.0f, 0.0f,
-                                1.0f, 1.0f, 0.0f,
-                                -1.0f, 1.0f, 0.0f};
+    this->data_ = new GLfloat[]{1.0f, -1.0f,
+                                -1.0f, -1.0f,
+                                1.0f, 1.0f,
+                                -1.0f, 1.0f   };
 }
 
 GLRender::~GLRender() {

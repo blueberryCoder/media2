@@ -13,6 +13,7 @@
 #include <EGL/eglext.h>
 #include "MediaPlayerController.h"
 #include "logger.h"
+#include <unistd.h>
 
 void
 initMediaCodec(MediaPlayerController *mediaPlayerController, off_t start, off_t length, int fd);
@@ -29,16 +30,24 @@ Java_com_blueberry_videoplayer_MediaPlayerController_initialize(JNIEnv *env, job
     auto *mediaPlayerController = new MediaPlayerController();
     // https://developer.android.com/ndk/reference/group/asset
     auto assetManager = AAssetManager_fromJava(env, asset_manager);
-    mediaPlayerController->asset = AAssetManager_open(assetManager, cPath, AASSET_MODE_RANDOM);
-    off_t start = 0, length = 0;
-
-    auto fd = AAsset_openFileDescriptor(mediaPlayerController->asset, &start, &length);
-    if (fd < 0) {
+    mediaPlayerController->audio_asset_ = AAssetManager_open(assetManager, cPath, AASSET_MODE_RANDOM);
+    mediaPlayerController->video_asset_ = AAssetManager_open(assetManager, cPath, AASSET_MODE_RANDOM);
+    off_t audio_start = 0, audio_length = 0;
+    auto audio_fd = AAsset_openFileDescriptor(mediaPlayerController->audio_asset_, &audio_start, &audio_length);
+    if (audio_fd < 0) {
         LOGE("input file is invalid.");
         assert("assure not here");
     }
+    off_t video_fd_start = 0,video_fd_len = 0;
+    auto video_fd = AAsset_openFileDescriptor(mediaPlayerController->video_asset_, &video_fd_start, &video_fd_len);
 
-    initMediaCodec(mediaPlayerController, start, length, fd);
+    mediaPlayerController->audioExtractor = AMediaExtractor_new();
+    mediaPlayerController->videoExtractor = AMediaExtractor_new();
+
+    AMediaExtractor_setDataSourceFd(mediaPlayerController->audioExtractor, audio_fd, audio_start, audio_length);
+    AMediaExtractor_setDataSourceFd(mediaPlayerController->videoExtractor, video_fd, video_fd_start, video_fd_len);
+
+    initMediaCodec(mediaPlayerController, audio_start, audio_length, audio_fd);
     initOpenGl(env, surface, mediaPlayerController);
     // init open sl
     slCreateEngine(&mediaPlayerController->sl_engine_obj_, 0, nullptr,
@@ -169,11 +178,6 @@ void initOpenGl(JNIEnv *env, jobject surface, MediaPlayerController *mediaPlayer
 
 void
 initMediaCodec(MediaPlayerController *mediaPlayerController, off_t start, off_t length, int fd) {
-    mediaPlayerController->audioExtractor = AMediaExtractor_new();
-    mediaPlayerController->videoExtractor = AMediaExtractor_new();
-
-    AMediaExtractor_setDataSourceFd(mediaPlayerController->audioExtractor, fd, start, length);
-    AMediaExtractor_setDataSourceFd(mediaPlayerController->videoExtractor, fd, start, length);
 
     auto trackCount = AMediaExtractor_getTrackCount(mediaPlayerController->audioExtractor);
     LOGD("track count is %d", trackCount);
@@ -226,7 +230,6 @@ initMediaCodec(MediaPlayerController *mediaPlayerController, off_t start, off_t 
 
 //    constexpr const char *yuv_output_file = "/sdcard/Android/data/com.blueberry.videoplayer/files/captain_women.yuv";
 //    constexpr const char *h264_output_file = "/sdcard/Android/data/com.blueberry.videoplayer/files/captain_women.h264";
-
 //    mediaPlayerController->yuv_file_.open(yuv_output_file, std::ios::ate | std::ios::out);
 //    if (!mediaPlayerController->yuv_file_.is_open()) {
 //        mediaPlayerController->yuv_file_.close();
