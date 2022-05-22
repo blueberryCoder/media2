@@ -28,7 +28,6 @@ Java_com_blueberry_videoplayer_MediaPlayerController_initialize(JNIEnv *env, job
                                                                 jstring path) {
     const char *cPath = env->GetStringUTFChars(path, NULL);
     auto *mediaPlayerController = new MediaPlayerController();
-    // https://developer.android.com/ndk/reference/group/asset
     auto assetManager = AAssetManager_fromJava(env, asset_manager);
     mediaPlayerController->audio_asset_ = AAssetManager_open(assetManager, cPath, AASSET_MODE_RANDOM);
     mediaPlayerController->video_asset_ = AAssetManager_open(assetManager, cPath, AASSET_MODE_RANDOM);

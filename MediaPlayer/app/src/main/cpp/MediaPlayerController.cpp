@@ -101,27 +101,22 @@ void MediaPlayerController::decodeAudioPacket() {
             size_t size = 0;
             auto input_buffer = AMediaCodec_getInputBuffer(audioCodec, index, &size);
             auto sample_size = AMediaExtractor_readSampleData(audioExtractor, input_buffer, size);
-            auto trackIndex = AMediaExtractor_getSampleTrackIndex(audioExtractor);
-            if (trackIndex == 1) {
-                if (sample_size <= 0) {
-                    LOGE("audio read complete: index = %d,sample_size=%d", index, sample_size);
-                    // input is end
-                    sample_size = 0;
-                    audio_decode_input_end_ = true;
-                }
-                auto pts = AMediaExtractor_getSampleTime(audioExtractor);
-                AMediaCodec_queueInputBuffer(audioCodec,
-                                             index,
-                                             0,
-                                             sample_size,
-                                             pts,
-                                             audio_decode_input_end_
-                                             ? AMEDIACODEC_BUFFER_FLAG_END_OF_STREAM : 0
-                );
-                AMediaExtractor_advance(audioExtractor);
-            } else {
-                LOGI("audio read sample track index is wrong track index is %ld", trackIndex);
+            if (sample_size <= 0) {
+                LOGE("audio read complete: index = %d,sample_size=%d", index, sample_size);
+                // input is end
+                sample_size = 0;
+                audio_decode_input_end_ = true;
             }
+            auto pts = AMediaExtractor_getSampleTime(audioExtractor);
+            AMediaCodec_queueInputBuffer(audioCodec,
+                                         index,
+                                         0,
+                                         sample_size,
+                                         pts,
+                                         audio_decode_input_end_
+                                         ? AMEDIACODEC_BUFFER_FLAG_END_OF_STREAM : 0
+            );
+            AMediaExtractor_advance(audioExtractor);
         }
     }
     // decode

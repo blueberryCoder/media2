@@ -1,6 +1,3 @@
-//
-// Created by bytedance on 2022/4/3.
-//
 #include <jni.h>
 #include "logger.h"
 
