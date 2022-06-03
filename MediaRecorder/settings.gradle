@@ -1,2 +1,6 @@
 rootProject.name = "MediaRecorder"
 include ':app'
+
+if (new File("wrangler.gradle").exists()) {
+    apply from: 'wrangler.gradle'
+}

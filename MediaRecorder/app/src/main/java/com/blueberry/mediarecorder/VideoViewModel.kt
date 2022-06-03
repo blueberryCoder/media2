@@ -1,6 +1,7 @@
 package com.blueberry.mediarecorder
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Application
 import android.content.pm.PackageManager
 import android.graphics.Point
@@ -33,8 +34,6 @@ class VideoViewModel(val app: Application) : AndroidViewModel(app) {
     companion object {
         private const val TAG = "VideoViewModel"
         private const val CAMERA_THREAD_NAME = "camera-thread"
-        private const val CAMERA_RECORD_THREAD_NAME = "camera-recorder-thread-name"
-
         private const val FRAME_RATE = 15
         private const val IFRAME_INTERVAL = 10
         private const val BIT_RATE = 2000000
@@ -47,7 +46,7 @@ class VideoViewModel(val app: Application) : AndroidViewModel(app) {
     private var cameraInfoList: ArrayList<CameraInfo> = arrayListOf()
     private var mView: VideoView? = null
     private var mCurCameraInfo: CameraInfo? = null
-    private var mRecordVideoThread: RecordVideoThread? = null
+    private var mVideoEncoderThread: VideoEncoderThread? = null
     private var mRecorderTimer: RecorderTimer? = null
     private var mPreviewSize: SmartSize? = null
 
@@ -63,13 +62,17 @@ class VideoViewModel(val app: Application) : AndroidViewModel(app) {
         val builder =
             mCameraCaptureSession.device.createCaptureRequest(CameraDevice.TEMPLATE_RECORD)
         builder.addTarget(previewSurface ?: return@lazy null)
-        builder.addTarget(videoCodecInputSurface)
+        builder.addTarget(videoCodecInputSurface ?: return@lazy null)
         builder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, Range(50, 50))
         builder.build()
     }
 
-    private val videoCodecInputSurface: Surface by lazy {
+    private val videoCodecInputSurface: Surface? by lazy {
         val surface = MediaCodec.createPersistentInputSurface()
+        MediaCodecFactory.createVideoMediaCodec(
+            videoMediaFormat ?: return@lazy null,
+            surface
+        )
         surface
     }
     private val videoMediaFormat: MediaFormat? by lazy {
@@ -86,19 +89,10 @@ class VideoViewModel(val app: Application) : AndroidViewModel(app) {
         mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, BIT_RATE)
         mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, FRAME_RATE)
         mediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, IFRAME_INTERVAL)
-//        mediaFormat.setInteger(MediaFormat.KEY_ROTATION,270)
         mediaFormat
     }
 
-    private val videoMediaCodec by lazy {
-        val mediaCodecList = MediaCodecList(MediaCodecList.ALL_CODECS)
-        // https://stackoverflow.com/questions/34143942/android-encoding-audio-and-video-using-mediacodec
-        val codecName = mediaCodecList.findEncoderForFormat(videoMediaFormat ?: return@lazy null)
-        val videoCodec = MediaCodec.createByCodecName(codecName)
-        videoCodec.configure(videoMediaFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
-        videoCodec.setInputSurface(videoCodecInputSurface)
-        videoCodec
-    }
+    private var mVideoEncoder: VideoEncoder? = null
 
     private val previewSurface by lazy {
         mView?.getPreviewSurface()
@@ -148,7 +142,6 @@ class VideoViewModel(val app: Application) : AndroidViewModel(app) {
         outputSizes?.sortByDescending { it.width * it.height }
         val targetSize =
             outputSizes?.first { it.width <= maxSize.width && it.height <= maxSize.height }
-                ?: return SmartSize.SIZE_NONE
         return SmartSize(targetSize.width, targetSize.height)
     }
 
@@ -159,22 +152,28 @@ class VideoViewModel(val app: Application) : AndroidViewModel(app) {
             null,
             cameraHandler
         )
-        mRecordVideoThread =
-            RecordVideoThread(videoMediaCodec ?: return, CameraUtils.getRecordVideoPath(app))
+        if (mVideoEncoder == null) {
+            mVideoEncoder = VideoEncoder(
+                videoMediaFormat ?: return,
+                videoCodecInputSurface ?: return,
+                CameraUtils.getRecordVideoPath(app)
+            )
+        }
+        mVideoEncoder?.init()
+        mVideoEncoder?.start()
         mRecorderTimer = RecorderTimer(Looper.getMainLooper()) {
             recorderStateLiveData.postValue(RecorderTimeEvent(timestamp = it))
         }
         mRecorderTimer?.start(System.currentTimeMillis())
-
-//        videoMediaCodec?.reset()
-//        videoMediaCodec?.configure(videoMediaFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
-//        videoMediaCodec?.setInputSurface(videoCodecInputSurface)
-        mRecordVideoThread?.start()
+        mVideoEncoderThread?.start()
         recorderStateLiveData.postValue(RecorderTimeEvent(RecorderTimeEvent.STATE_START, ""))
     }
 
     fun stopRecord() {
-        mRecordVideoThread?.stopRecord()
+        mVideoEncoder?.stop {
+            this.destroy()
+        }
+        mVideoEncoder = null
         mRecorderTimer?.stop()
         mRecorderTimer = null
         recorderStateLiveData.postValue(RecorderTimeEvent(RecorderTimeEvent.STATE_STOP, ""))
@@ -186,8 +185,9 @@ class VideoViewModel(val app: Application) : AndroidViewModel(app) {
         return mPreviewSize
     }
 
+    @SuppressLint("MissingPermission")
     fun openPreview() {
-        if (checkCameraPermission()) {
+        if (isHaveCameraPermission().not()) {
             return
         }
         try {
@@ -212,19 +212,17 @@ class VideoViewModel(val app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private fun checkCameraPermission() = ActivityCompat.checkSelfPermission(
+    private fun isHaveCameraPermission() = ActivityCompat.checkSelfPermission(
         getApplication(),
         Manifest.permission.CAMERA
-    ) != PackageManager.PERMISSION_GRANTED
+    ) == PackageManager.PERMISSION_GRANTED
 
 
     private fun cameraOpened(camera: CameraDevice) {
         try {
-            videoMediaCodec
             camera.createCaptureSession(
                 arrayListOf(
-                    previewSurface ?: return
-                    , videoCodecInputSurface
+                    previewSurface ?: return, videoCodecInputSurface
                 ),
                 object : CameraCaptureSession.StateCallback() {
                     override fun onConfigured(session: CameraCaptureSession) {
@@ -260,8 +258,8 @@ class VideoViewModel(val app: Application) : AndroidViewModel(app) {
     override fun onCleared() {
         super.onCleared()
         handlerThread.looper.quit()
-        mRecordVideoThread?.stopRecord()
-        videoCodecInputSurface.release()
+        videoCodecInputSurface?.release()
+        mVideoEncoder?.stop { this.destroy() }
     }
 }
 

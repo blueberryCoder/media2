@@ -9,9 +9,9 @@ import java.io.FileOutputStream
  * author: muyonggang
  * date: 2022/5/29
  */
-class RecordVideoThread(
+class VideoEncoderThread(
     private val videoCodec: MediaCodec,
-    private val file: File
+    private val file: File,
 ) : Thread() {
     companion object {
         private const val TAG = "RecordVideoThread"
@@ -21,9 +21,9 @@ class RecordVideoThread(
     }
 
     private var state = STATE_START
+    private var mStopCallback: (() -> Unit)? = null
 
     override fun run() {
-        videoCodec.start()
         FileOutputStream(file).use { fos ->
             while (state == STATE_START) {
                 val bufferInfo = MediaCodec.BufferInfo()
@@ -33,17 +33,18 @@ class RecordVideoThread(
                     val outputArr = ByteArray(bufferInfo.size)
                     outputBuffer.get(outputArr, bufferInfo.offset, bufferInfo.size)
                     fos.write(outputArr)
-                    videoCodec.releaseOutputBuffer(outputIndex,false)
-                    Log.i(TAG,  "consume output buffer index $outputIndex ")
-                }else{
-
+                    videoCodec.releaseOutputBuffer(outputIndex, false)
+                    Log.i(TAG, "consume output buffer index $outputIndex ")
                 }
             }
         }
+
+        mStopCallback?.invoke()
+        mStopCallback = null
     }
 
-    fun stopRecord() {
+    fun stopRecord(stopCallback: () -> Unit) {
+        mStopCallback = stopCallback
         state = STATE_STOP
-        videoCodec.stop()
     }
 }

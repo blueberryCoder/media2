@@ -75,10 +75,11 @@ class VideoActivity : AppCompatActivity(), VideoView {
         mVideoViewModel?.recorderStateLiveData?.observe(this) { (state, timestamp) ->
             when (state) {
                 RecorderTimeEvent.STATE_START -> {
-                    mTvTimer?.visibility = View.VISIBLE
+//                    mTvTimer?.visibility = View.VISIBLE
                     mBtnStart?.background = ColorDrawable(Color.RED)
                 }
                 RecorderTimeEvent.STATE_UPDATE -> {
+                    mTvTimer?.visibility = View.VISIBLE
                     mTvTimer?.text = timestamp
                 }
                 RecorderTimeEvent.STATE_STOP -> {

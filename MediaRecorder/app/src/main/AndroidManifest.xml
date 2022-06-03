@@ -14,6 +14,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MediaRecorder">
         <activity
+            android:name=".screen.ScreenTest"
+            android:exported="false" />
+        <activity
             android:name=".VideoActivity"
             android:exported="false" />
         <activity
