@@ -30,13 +30,11 @@ import java.util.*
  * author: muyonggang
  * date: 2022/5/22
  */
-class VideoViewModel(val app: Application) : AndroidViewModel(app) {
+@SuppressLint("MissingPermission")
+class VideoViewModel(private val app: Application) : AndroidViewModel(app) {
     companion object {
         private const val TAG = "VideoViewModel"
         private const val CAMERA_THREAD_NAME = "camera-thread"
-        private const val FRAME_RATE = 15
-        private const val IFRAME_INTERVAL = 10
-        private const val BIT_RATE = 2000000
     }
 
     private lateinit var mCameraCaptureSession: CameraCaptureSession
@@ -76,23 +74,38 @@ class VideoViewModel(val app: Application) : AndroidViewModel(app) {
         surface
     }
     private val videoMediaFormat: MediaFormat? by lazy {
-        val previewSize = mPreviewSize ?: return@lazy null
-        val mediaFormat = MediaFormat.createVideoFormat(
-            MediaFormat.MIMETYPE_VIDEO_AVC,
-            previewSize.width,
-            previewSize.height
+        val (width, height) = mPreviewSize ?: return@lazy null
+        MediaCodecFactory.createVideoMediaFormat(width, height)
+    }
+
+    // pcm16bit
+    private val audioSourceFormat = AudioFormat.Builder()
+        .setChannelMask(AudioFormat.CHANNEL_IN_STEREO)
+        .setSampleRate(44100)
+        .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+        .build()
+
+    private val mAudioRecord: AudioRecord? by lazy {
+        val minBufferSize = AudioRecord.getMinBufferSize(
+            44100,
+            AudioFormat.CHANNEL_IN_STEREO, AudioFormat.ENCODING_PCM_16BIT
         )
-        mediaFormat.setInteger(
-            MediaFormat.KEY_COLOR_FORMAT,
-            MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface
+//        AudioRecord.Builder()
+//            .setAudioFormat(audioSourceFormat)
+//            .setBufferSizeInBytes(minBufferSize * 2)
+//            .setAudioSource(MediaRecorder.AudioSource.DEFAULT)
+//            .build()
+
+        AudioRecord(
+            MediaRecorder.AudioSource.DEFAULT, 44100,
+            AudioFormat.CHANNEL_IN_STEREO,
+            AudioFormat.ENCODING_PCM_16BIT,
+            minBufferSize * 2
         )
-        mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, BIT_RATE)
-        mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, FRAME_RATE)
-        mediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, IFRAME_INTERVAL)
-        mediaFormat
     }
 
     private var mVideoEncoder: VideoEncoder? = null
+    private var mAudioEncoder: AudioEncoder? = null
 
     private val previewSurface by lazy {
         mView?.getPreviewSurface()
@@ -159,24 +172,40 @@ class VideoViewModel(val app: Application) : AndroidViewModel(app) {
                 CameraUtils.getRecordVideoPath(app)
             )
         }
+        if (mAudioEncoder == null) {
+            mAudioEncoder =
+                AudioEncoder(
+                    mAudioRecord ?: return,
+                    MediaCodecFactory.createAudioMediaFormat(),
+                    CameraUtils.getRecordAudioPath(app)
+                )
+        }
         mVideoEncoder?.init()
         mVideoEncoder?.start()
-        mRecorderTimer = RecorderTimer(Looper.getMainLooper()) {
-            recorderStateLiveData.postValue(RecorderTimeEvent(timestamp = it))
+
+        mAudioRecord?.startRecording()
+        mAudioEncoder?.init()
+        mAudioEncoder?.start()
+
+        mRecorderTimer = RecorderTimer(Looper.getMainLooper()) { state, timeStamp ->
+            recorderStateLiveData.postValue(RecorderTimeEvent(state, timeStamp))
         }
         mRecorderTimer?.start(System.currentTimeMillis())
         mVideoEncoderThread?.start()
-        recorderStateLiveData.postValue(RecorderTimeEvent(RecorderTimeEvent.STATE_START, ""))
     }
 
     fun stopRecord() {
         mVideoEncoder?.stop {
             this.destroy()
         }
+        mAudioRecord?.stop()
+        mAudioEncoder?.stop {
+            this.destroy()
+        }
+        mAudioEncoder = null
         mVideoEncoder = null
         mRecorderTimer?.stop()
         mRecorderTimer = null
-        recorderStateLiveData.postValue(RecorderTimeEvent(RecorderTimeEvent.STATE_STOP, ""))
     }
 
     fun getLargestSize(display: Display): SmartSize? {

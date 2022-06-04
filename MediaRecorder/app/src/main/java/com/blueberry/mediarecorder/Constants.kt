@@ -6,5 +6,5 @@ package com.blueberry.mediarecorder
  */
 object Constants {
     const val H264_FILE = "recorder.h264"
-
+    const val AAC_FILE = "recorder.aac"
 }

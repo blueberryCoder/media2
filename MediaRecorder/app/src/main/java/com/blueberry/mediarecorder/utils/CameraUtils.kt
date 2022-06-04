@@ -64,6 +64,14 @@ object CameraUtils {
         return file
     }
 
+    fun getRecordAudioPath(context: Context): File {
+        val file = File(context.externalCacheDir, Constants.AAC_FILE)
+        if (file.parentFile?.exists()?.not() == true) {
+            file.parentFile?.mkdirs()
+        }
+        return file
+    }
+
     infix fun Array<Size>.and(second: Array<Size>): Array<Size> {
         return arraySizeAnd(this, second)
     }

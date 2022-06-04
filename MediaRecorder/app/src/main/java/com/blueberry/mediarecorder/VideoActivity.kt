@@ -14,7 +14,6 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.ViewModelProvider
-import com.blueberry.mediarecorder.data.RecorderTimeEvent
 import com.blueberry.mediarecorder.view.AutoFitSurfaceView
 
 class VideoActivity : AppCompatActivity(), VideoView {
@@ -74,17 +73,18 @@ class VideoActivity : AppCompatActivity(), VideoView {
 
         mVideoViewModel?.recorderStateLiveData?.observe(this) { (state, timestamp) ->
             when (state) {
-                RecorderTimeEvent.STATE_START -> {
-//                    mTvTimer?.visibility = View.VISIBLE
-                    mBtnStart?.background = ColorDrawable(Color.RED)
-                }
-                RecorderTimeEvent.STATE_UPDATE -> {
+                RecorderTimer.START -> {
                     mTvTimer?.visibility = View.VISIBLE
+                    mTvTimer?.text = ""
+                    mBtnStart?.text = "recoding"
+                }
+                RecorderTimer.RUNNING -> {
                     mTvTimer?.text = timestamp
                 }
-                RecorderTimeEvent.STATE_STOP -> {
+                RecorderTimer.STOP -> {
                     mTvTimer?.visibility = View.GONE
                     mBtnStart?.background = ColorDrawable(Color.BLUE)
+                    mBtnStart?.text = "start"
                 }
             }
         }
@@ -102,7 +102,7 @@ class VideoActivity : AppCompatActivity(), VideoView {
         if (checkHasCameraPermission()) {
             ActivityCompat.requestPermissions(
                 this,
-                arrayOf(Manifest.permission.CAMERA),
+                arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO),
                 REQUEST_CODE_CAMERA_PERMISSION
             )
         } else {
@@ -116,7 +116,9 @@ class VideoActivity : AppCompatActivity(), VideoView {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_CODE_CAMERA_PERMISSION && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+        if (requestCode == REQUEST_CODE_CAMERA_PERMISSION && grantResults[0] == PackageManager.PERMISSION_GRANTED
+            && grantResults[1] == PackageManager.PERMISSION_GRANTED
+        ) {
             openPreview()
         }
     }
@@ -126,7 +128,7 @@ class VideoActivity : AppCompatActivity(), VideoView {
             return
         }
         val largestPreviewSize =
-            mVideoViewModel?.getLargestSize(mVideoSurfaceView?.display ?: return)?:return
+            mVideoViewModel?.getLargestSize(mVideoSurfaceView?.display ?: return) ?: return
         mVideoSurfaceView?.setAspectRatio(largestPreviewSize.width, largestPreviewSize.height)
         mVideoViewModel?.openPreview()
     }
