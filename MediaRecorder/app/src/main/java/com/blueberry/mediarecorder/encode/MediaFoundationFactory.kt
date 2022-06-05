@@ -1,16 +1,15 @@
-package com.blueberry.mediarecorder
+package com.blueberry.mediarecorder.encode
 
-import android.media.MediaCodec
-import android.media.MediaCodecInfo
-import android.media.MediaCodecList
-import android.media.MediaFormat
+import android.annotation.SuppressLint
+import android.media.*
 import android.view.Surface
 
 /**
  * author: muyonggang
  * date: 2022/6/3
  */
-object MediaCodecFactory {
+object MediaFoundationFactory {
+
     private const val FRAME_RATE = 15
     private const val IFRAME_INTERVAL = 10
     private const val VIDEO_BIT_RATE = 2000000
@@ -19,6 +18,33 @@ object MediaCodecFactory {
     private const val SAMPLE_RATE = 44100
     private const val CHANNEL_COUNT = 2
 
+    fun createMuxer(
+        filePath: String,
+        audioFormat: MediaFormat,
+        videoFormat: MediaFormat
+    ): MediaMuxerMp4 {
+        return MediaMuxerMp4(filePath)
+    }
+
+    // pcm16bit
+    fun createAudioSourceFormat() = AudioFormat.Builder()
+        .setChannelMask(AudioFormat.CHANNEL_IN_STEREO)
+        .setSampleRate(SAMPLE_RATE)
+        .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+        .build()
+
+    @SuppressLint("MissingPermission")
+    fun createAudioRecord(audioFormat: AudioFormat): AudioRecord? {
+        val minBufferSize = AudioRecord.getMinBufferSize(
+            44100,
+            AudioFormat.CHANNEL_IN_STEREO, AudioFormat.ENCODING_PCM_16BIT
+        )
+        return AudioRecord.Builder()
+            .setAudioFormat(audioFormat)
+            .setBufferSizeInBytes(minBufferSize * 2)
+            .setAudioSource(MediaRecorder.AudioSource.DEFAULT)
+            .build()
+    }
 
     fun createAudioMediaFormat(): MediaFormat {
         val mediaFormat = MediaFormat.createAudioFormat(
@@ -27,7 +53,10 @@ object MediaCodecFactory {
             CHANNEL_COUNT
         )
         mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, AUDIO_BIT_RATE)
-        mediaFormat.setInteger(MediaFormat.KEY_AAC_PROFILE,MediaCodecInfo.CodecProfileLevel.AACObjectELD)
+        mediaFormat.setInteger(
+            MediaFormat.KEY_AAC_PROFILE,
+            MediaCodecInfo.CodecProfileLevel.AACObjectELD
+        )
         return mediaFormat
     }
 
@@ -63,6 +92,4 @@ object MediaCodecFactory {
         audioCodec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
         return audioCodec
     }
-
-
 }

@@ -22,6 +22,7 @@ import androidx.lifecycle.MutableLiveData
 import com.blueberry.mediarecorder.data.CameraInfo
 import com.blueberry.mediarecorder.data.RecorderTimeEvent
 import com.blueberry.mediarecorder.data.SmartSize
+import com.blueberry.mediarecorder.encode.*
 import com.blueberry.mediarecorder.utils.CameraUtils
 import com.blueberry.mediarecorder.utils.CameraUtils.and
 import java.util.*
@@ -67,7 +68,7 @@ class VideoViewModel(private val app: Application) : AndroidViewModel(app) {
 
     private val videoCodecInputSurface: Surface? by lazy {
         val surface = MediaCodec.createPersistentInputSurface()
-        MediaCodecFactory.createVideoMediaCodec(
+        MediaFoundationFactory.createVideoMediaCodec(
             videoMediaFormat ?: return@lazy null,
             surface
         )
@@ -75,37 +76,20 @@ class VideoViewModel(private val app: Application) : AndroidViewModel(app) {
     }
     private val videoMediaFormat: MediaFormat? by lazy {
         val (width, height) = mPreviewSize ?: return@lazy null
-        MediaCodecFactory.createVideoMediaFormat(width, height)
+        MediaFoundationFactory.createVideoMediaFormat(width, height)
     }
+    private val audioMediaFormat =
+        MediaFoundationFactory.createAudioMediaFormat()
 
-    // pcm16bit
-    private val audioSourceFormat = AudioFormat.Builder()
-        .setChannelMask(AudioFormat.CHANNEL_IN_STEREO)
-        .setSampleRate(44100)
-        .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-        .build()
-
+    private val audioSourceFormat = MediaFoundationFactory.createAudioSourceFormat()
     private val mAudioRecord: AudioRecord? by lazy {
-        val minBufferSize = AudioRecord.getMinBufferSize(
-            44100,
-            AudioFormat.CHANNEL_IN_STEREO, AudioFormat.ENCODING_PCM_16BIT
-        )
-//        AudioRecord.Builder()
-//            .setAudioFormat(audioSourceFormat)
-//            .setBufferSizeInBytes(minBufferSize * 2)
-//            .setAudioSource(MediaRecorder.AudioSource.DEFAULT)
-//            .build()
-
-        AudioRecord(
-            MediaRecorder.AudioSource.DEFAULT, 44100,
-            AudioFormat.CHANNEL_IN_STEREO,
-            AudioFormat.ENCODING_PCM_16BIT,
-            minBufferSize * 2
-        )
+        MediaFoundationFactory.createAudioRecord(audioSourceFormat)
     }
 
     private var mVideoEncoder: VideoEncoder? = null
     private var mAudioEncoder: AudioEncoder? = null
+    private var mp4Muxer: MediaMuxerMp4? = null
+    private var timeSync: TimeSync? = null
 
     private val previewSurface by lazy {
         mView?.getPreviewSurface()
@@ -165,27 +149,38 @@ class VideoViewModel(private val app: Application) : AndroidViewModel(app) {
             null,
             cameraHandler
         )
+        if (mp4Muxer == null) {
+            mp4Muxer = MediaFoundationFactory.createMuxer(
+                CameraUtils.geMp4FilePath(app).absolutePath,
+                audioMediaFormat, videoMediaFormat ?: return
+            )
+        }
+        val timeSync = TimeSync()
         if (mVideoEncoder == null) {
             mVideoEncoder = VideoEncoder(
                 videoMediaFormat ?: return,
                 videoCodecInputSurface ?: return,
-                CameraUtils.getRecordVideoPath(app)
+                mp4Muxer ?: return, timeSync
             )
         }
         if (mAudioEncoder == null) {
             mAudioEncoder =
                 AudioEncoder(
                     mAudioRecord ?: return,
-                    MediaCodecFactory.createAudioMediaFormat(),
-                    CameraUtils.getRecordAudioPath(app)
+                    MediaFoundationFactory.createAudioMediaFormat(),
+                    mp4Muxer ?: return, timeSync
                 )
         }
+
+//        mp4Muxer?.start()
+
         mVideoEncoder?.init()
         mVideoEncoder?.start()
 
         mAudioRecord?.startRecording()
         mAudioEncoder?.init()
         mAudioEncoder?.start()
+
 
         mRecorderTimer = RecorderTimer(Looper.getMainLooper()) { state, timeStamp ->
             recorderStateLiveData.postValue(RecorderTimeEvent(state, timeStamp))
@@ -195,17 +190,32 @@ class VideoViewModel(private val app: Application) : AndroidViewModel(app) {
     }
 
     fun stopRecord() {
+        mAudioRecord?.stop()
+        val destroyMuxer = object : Runnable {
+            private var count = 2
+            override fun run() {
+                count--
+                if (count == 0) {
+                    Log.i(TAG, "run: count $count")
+                    mp4Muxer?.stop()
+                    mp4Muxer?.release()
+                    mp4Muxer = null
+                }
+            }
+        }
         mVideoEncoder?.stop {
             this.destroy()
+            destroyMuxer.run()
         }
-        mAudioRecord?.stop()
         mAudioEncoder?.stop {
             this.destroy()
+            destroyMuxer.run()
         }
         mAudioEncoder = null
         mVideoEncoder = null
         mRecorderTimer?.stop()
         mRecorderTimer = null
+        timeSync = null
     }
 
     fun getLargestSize(display: Display): SmartSize? {
