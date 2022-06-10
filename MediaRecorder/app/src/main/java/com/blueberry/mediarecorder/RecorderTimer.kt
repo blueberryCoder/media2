@@ -12,7 +12,8 @@ import java.util.*
  */
 
 class RecorderTimer(
-    private val looper: Looper, private val callback: (
+    private val looper: Looper,
+    private val callback: (
         actionType: Int,
         timestamp: String
     ) -> Unit

@@ -1,26 +1,22 @@
 package com.blueberry.mediarecorder
 
-import android.Manifest
-import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
-import android.util.Log
 import android.view.Surface
 import android.view.SurfaceHolder
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
 import androidx.lifecycle.ViewModelProvider
+import com.blueberry.mediarecorder.utils.PermissionUtil
 import com.blueberry.mediarecorder.view.AutoFitSurfaceView
 
 class VideoActivity : AppCompatActivity(), VideoView {
 
     companion object {
         private const val TAG = "VideoActivity"
-        private const val REQUEST_CODE_CAMERA_PERMISSION = 100
         private const val RECORD_STATE_STOP = 0
         private const val RECORD_STATE_START = 1
     }
@@ -44,7 +40,6 @@ class VideoActivity : AppCompatActivity(), VideoView {
         mVideoSurfaceView?.holder?.addCallback(
             object : SurfaceHolder.Callback {
                 override fun surfaceCreated(surfaceHolder: SurfaceHolder) {
-                    Log.i(TAG, "surfaceCreated: ")
                     checkCameraPermissionsAndPreview()
                 }
 
@@ -54,29 +49,29 @@ class VideoActivity : AppCompatActivity(), VideoView {
                     i1: Int,
                     i2: Int
                 ) {
-                    Log.i(TAG, "surfaceChanged: ")
                 }
 
                 override fun surfaceDestroyed(surfaceHolder: SurfaceHolder) {
-                    Log.i(TAG, "surfaceDestroyed: ")
                 }
             })
         mBtnStart?.setOnClickListener {
-            if (recordState == RECORD_STATE_STOP) {
+            recordState = if (recordState == RECORD_STATE_STOP) {
                 startRecord()
-                recordState = RECORD_STATE_START
+                RECORD_STATE_START
             } else {
                 stopRecord()
-                recordState = RECORD_STATE_STOP
+                RECORD_STATE_STOP
             }
         }
+    }
 
-        mVideoViewModel?.recorderStateLiveData?.observe(this) { (state, timestamp) ->
+    private fun startRecord() {
+        mVideoViewModel?.startRecord { state: Int, timestamp: String ->
             when (state) {
                 RecorderTimer.START -> {
                     mTvTimer?.visibility = View.VISIBLE
                     mTvTimer?.text = ""
-                    mBtnStart?.text = "recoding"
+                    mBtnStart?.text = getString(R.string.btn_recorder_recording)
                 }
                 RecorderTimer.RUNNING -> {
                     mTvTimer?.text = timestamp
@@ -84,14 +79,10 @@ class VideoActivity : AppCompatActivity(), VideoView {
                 RecorderTimer.STOP -> {
                     mTvTimer?.visibility = View.GONE
                     mBtnStart?.background = ColorDrawable(Color.BLUE)
-                    mBtnStart?.text = "start"
+                    mBtnStart?.text = getString(R.string.btn_recorder_start)
                 }
             }
         }
-    }
-
-    private fun startRecord() {
-        mVideoViewModel?.startRecord()
     }
 
     private fun stopRecord() {
@@ -99,12 +90,8 @@ class VideoActivity : AppCompatActivity(), VideoView {
     }
 
     private fun checkCameraPermissionsAndPreview() {
-        if (checkHasCameraPermission()) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO),
-                REQUEST_CODE_CAMERA_PERMISSION
-            )
+        if (PermissionUtil.isHavePermissions(this).not()) {
+            PermissionUtil.requestPermissions(this)
         } else {
             openPreview()
         }
@@ -116,26 +103,27 @@ class VideoActivity : AppCompatActivity(), VideoView {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_CODE_CAMERA_PERMISSION && grantResults[0] == PackageManager.PERMISSION_GRANTED
-            && grantResults[1] == PackageManager.PERMISSION_GRANTED
-        ) {
-            openPreview()
-        }
+        PermissionUtil.onRequestPermissionsResult(
+            requestCode,
+            permissions,
+            grantResults,
+            ::openPreview
+        )
     }
 
     private fun openPreview() {
-        if (checkHasCameraPermission()) {
+        if (PermissionUtil.isHavePermissions(this).not()) {
             return
         }
         val largestPreviewSize =
             mVideoViewModel?.getLargestSize(mVideoSurfaceView?.display ?: return) ?: return
         mVideoSurfaceView?.setAspectRatio(largestPreviewSize.width, largestPreviewSize.height)
-        mVideoViewModel?.openPreview()
+        mVideoViewModel?.openPreview(
+            largestPreviewSize,
+            mVideoSurfaceView?.holder?.surface ?: return
+        )
     }
 
-    private fun checkHasCameraPermission() = ActivityCompat.checkSelfPermission(
-        this, Manifest.permission.CAMERA
-    ) != PackageManager.PERMISSION_GRANTED
 
     override fun getPreviewSurface(): Surface? {
         return mVideoSurfaceView?.holder?.surface

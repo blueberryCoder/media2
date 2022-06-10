@@ -19,11 +19,9 @@ object MediaFoundationFactory {
     private const val CHANNEL_COUNT = 2
 
     fun createMuxer(
-        filePath: String,
-        audioFormat: MediaFormat,
-        videoFormat: MediaFormat
+        filePath: String,orientation:Int
     ): MediaMuxerMp4 {
-        return MediaMuxerMp4(filePath)
+        return MediaMuxerMp4(filePath,orientation)
     }
 
     // pcm16bit
@@ -34,7 +32,7 @@ object MediaFoundationFactory {
         .build()
 
     @SuppressLint("MissingPermission")
-    fun createAudioRecord(audioFormat: AudioFormat): AudioRecord? {
+    fun createAudioRecord(audioFormat: AudioFormat): AudioRecord {
         val minBufferSize = AudioRecord.getMinBufferSize(
             44100,
             AudioFormat.CHANNEL_IN_STEREO, AudioFormat.ENCODING_PCM_16BIT

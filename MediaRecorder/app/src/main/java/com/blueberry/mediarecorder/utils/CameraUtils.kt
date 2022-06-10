@@ -37,7 +37,8 @@ object CameraUtils {
                     val outputFormats = streamConfigurationMap!!.outputFormats
                     val outputSizes = streamConfigurationMap.getOutputSizes(ImageFormat.YUV_420_888)
                 }
-                cameraInfoList.add(CameraInfo(cameraId, lensFacing ?: -1))
+                val orientation = cameraCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION)
+                cameraInfoList.add(CameraInfo(cameraId, lensFacing ?: -1,orientation))
             }
         } catch (e: CameraAccessException) {
             Log.e(TAG, "onCreate: e" + e.message)
