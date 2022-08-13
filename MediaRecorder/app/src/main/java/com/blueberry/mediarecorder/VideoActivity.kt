@@ -16,7 +16,6 @@ import com.blueberry.mediarecorder.view.AutoFitSurfaceView
 class VideoActivity : AppCompatActivity(), VideoView {
 
     companion object {
-        private const val TAG = "VideoActivity"
         private const val RECORD_STATE_STOP = 0
         private const val RECORD_STATE_START = 1
     }

@@ -14,7 +14,6 @@ class MediaMuxerMp4(output: String, orientation: Int) {
     private val muxer: MediaMuxer
     private var audioTrackIndex: Int? = null
     private var videoTrackIndex: Int? = null
-
     private var audioReady = false
     private var videoReady = false
     private var isStarted = false
@@ -64,7 +63,6 @@ class MediaMuxerMp4(output: String, orientation: Int) {
     }
 
     fun stop() {
-        Log.i(TAG, "stop: ")
         muxer.stop()
         isStarted = false
         audioReady = false
@@ -72,7 +70,6 @@ class MediaMuxerMp4(output: String, orientation: Int) {
     }
 
     fun release() {
-        Log.i(TAG, "release: ")
         muxer.release()
     }
 }

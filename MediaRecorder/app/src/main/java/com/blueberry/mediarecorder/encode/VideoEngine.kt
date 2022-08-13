@@ -47,7 +47,6 @@ constructor(private val context: Context) {
     private var handlerThread = HandlerThread(CAMERA_THREAD_NAME)
     private val cameraHandler by lazy { Handler(handlerThread.looper) }
 
-
     private lateinit var previewSurface: Surface
     private lateinit var previewSize: SmartSize
     private lateinit var mCameraCaptureSession: CameraCaptureSession
@@ -58,7 +57,6 @@ constructor(private val context: Context) {
     private val mAudioRecord: AudioRecord by lazy {
         MediaFoundationFactory.createAudioRecord(audioSourceFormat)
     }
-
 
     private var mVideoEncoder: VideoEncoder? = null
     private var mAudioEncoder: AudioEncoder? = null
@@ -86,9 +84,7 @@ constructor(private val context: Context) {
 
     private val videoCodecInputSurface: Surface by lazy {
         val surface = MediaCodec.createPersistentInputSurface()
-        MediaFoundationFactory.createVideoMediaCodec(
-            videoMediaFormat, surface
-        )
+        MediaFoundationFactory.createVideoMediaCodec(videoMediaFormat, surface)
         surface
     }
 
@@ -96,9 +92,6 @@ constructor(private val context: Context) {
         val (width, height) = previewSize
         MediaFoundationFactory.createVideoMediaFormat(width, height)
     }
-
-    val recorderStateLiveData = MutableLiveData<RecorderTimeEvent>()
-
 
     fun initialize() {
         cameraInfoList = CameraUtils.enumerateCameras(mCameraManager)
@@ -130,13 +123,15 @@ constructor(private val context: Context) {
         } catch (e: CameraAccessException) {
             e.printStackTrace()
         }
-
     }
 
 
+    /**
+     * @param display 窗口的大小信息，根据此信息结合相机支持的大小选择合适的Size
+     */
     fun getLargestPreviewSize(display: Display): SmartSize {
         mCurCameraInfo ?: SmartSize.SIZE_NONE
-        val cameraCharacteristics = mCameraManager?.getCameraCharacteristics(
+        val cameraCharacteristics = mCameraManager.getCameraCharacteristics(
             mCurCameraInfo?.cameraId ?: return SmartSize.SIZE_NONE
         )
         val displayPoint = Point()
@@ -149,16 +144,15 @@ constructor(private val context: Context) {
             hdScreen = true
         }
         val maxSize = if (hdScreen) SmartSize.SIZE_1080P else screenSize
-        val map = cameraCharacteristics?.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
+        val map = cameraCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
         val surfaceOutputSizes =
             map?.getOutputSizes(SurfaceHolder::class.java) ?: return SmartSize.SIZE_NONE
         val mediacodecOutputSizes =
             map.getOutputSizes(MediaCodec::class.java) ?: return SmartSize.SIZE_NONE
-
         val outputSizes = surfaceOutputSizes and mediacodecOutputSizes
         outputSizes.sortByDescending { it.width * it.height }
         val targetSize =
-            outputSizes?.first { it.width <= maxSize.width && it.height <= maxSize.height }
+            outputSizes.first { it.width <= maxSize.width && it.height <= maxSize.height }
         return SmartSize(targetSize.width, targetSize.height)
     }
 
@@ -189,20 +183,16 @@ constructor(private val context: Context) {
                 )
         }
         mAudioRecord.startRecording()
-
         mVideoEncoder?.init()
         mVideoEncoder?.start()
-
         mAudioEncoder?.init()
         mAudioEncoder?.start()
-
         mRecorderTimer = RecorderTimer(Looper.getMainLooper(), callback)
         mRecorderTimer?.start(System.currentTimeMillis())
     }
 
     fun stopRecord() {
         mAudioRecord.stop()
-
         val destroyMuxer = object : Runnable {
             private var count = 2
             override fun run() {
@@ -234,22 +224,21 @@ constructor(private val context: Context) {
         handlerThread.looper.quit()
         videoCodecInputSurface.release()
         mVideoEncoder?.stop { this.destroy() }
+        mAudioRecord.release()
     }
 
     private fun cameraOpened(camera: CameraDevice) {
         try {
             camera.createCaptureSession(
-                arrayListOf(
-                    previewSurface, videoCodecInputSurface
-                ),
+                arrayListOf(previewSurface, videoCodecInputSurface),
                 object : CameraCaptureSession.StateCallback() {
                     override fun onConfigured(session: CameraCaptureSession) {
+                        // session 打开成功
                         mCameraCaptureSession = session
                         startPreview(session)
                     }
 
                     override fun onConfigureFailed(session: CameraCaptureSession) {
-                        Log.i(TAG, "onConfigureFailed: ")
                     }
                 },
                 cameraHandler

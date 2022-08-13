@@ -66,6 +66,12 @@
         "typeinfo": "cpp",
         "unordered_map": "cpp",
         "utility": "cpp",
-        "vector": "cpp"
-    }
+        "vector": "cpp",
+        "condition_variable": "cpp",
+        "queue": "cpp",
+        "thread": "cpp",
+        "mayer_fft.c": "cpp",
+        "valarray": "cpp"
+    },
+    "C_Cpp.errorSquiggles": "Disabled"
 }

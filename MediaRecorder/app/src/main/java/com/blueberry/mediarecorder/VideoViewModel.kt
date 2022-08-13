@@ -29,10 +29,7 @@ class VideoViewModel(private val app: Application) : AndroidViewModel(app) {
     }
 
     fun startRecord(
-        callback: (
-            actionType: Int,
-            timestamp: String
-        ) -> Unit
+        callback: (actionType: Int, timestamp: String) -> Unit
     ) {
         mVideoEngine.startRecord(callback)
     }

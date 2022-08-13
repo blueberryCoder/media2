@@ -14,7 +14,6 @@ class AutoFitSurfaceView @JvmOverloads
 constructor(context: Context? = null, attributeSet: AttributeSet? = null, defStyle: Int = 0) :
     SurfaceView(context, attributeSet, defStyle) {
     private var aspectRatio: Float = 0F
-     // 3264 x 2448
     fun setAspectRatio(width: Int, height: Int) {
         this.aspectRatio = width.toFloat() / height.toFloat()
         holder.setFixedSize(width, height)

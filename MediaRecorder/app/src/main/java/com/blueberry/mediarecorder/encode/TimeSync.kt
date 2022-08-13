@@ -25,8 +25,5 @@ class TimeSync {
         }
         return pts+ diff!!
     }
-
     private fun currentMicrosecond() = System.nanoTime() / 1000
-
-
 }
