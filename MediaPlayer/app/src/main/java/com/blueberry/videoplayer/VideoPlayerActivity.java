@@ -72,7 +72,7 @@ public class VideoPlayerActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if(controller!=null){
+        if (controller != null) {
             controller.destroy();
         }
     }

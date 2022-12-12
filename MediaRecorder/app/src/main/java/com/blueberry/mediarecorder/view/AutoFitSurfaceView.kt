@@ -1,9 +1,11 @@
 package com.blueberry.mediarecorder.view
 
 import android.content.Context
+import android.opengl.GLSurfaceView
 import android.util.AttributeSet
 import android.util.Log
 import android.view.SurfaceView
+import android.view.View
 import kotlin.math.roundToInt
 
 /**
@@ -12,7 +14,7 @@ import kotlin.math.roundToInt
  */
 class AutoFitSurfaceView @JvmOverloads
 constructor(context: Context? = null, attributeSet: AttributeSet? = null, defStyle: Int = 0) :
-    SurfaceView(context, attributeSet, defStyle) {
+    SurfaceView(context, attributeSet) {
     private var aspectRatio: Float = 0F
     fun setAspectRatio(width: Int, height: Int) {
         this.aspectRatio = width.toFloat() / height.toFloat()
@@ -22,8 +24,8 @@ constructor(context: Context? = null, attributeSet: AttributeSet? = null, defSty
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
-        val width = MeasureSpec.getSize(widthMeasureSpec)
-        val height = MeasureSpec.getSize(heightMeasureSpec)
+        val width = View.MeasureSpec.getSize(widthMeasureSpec)
+        val height = View.MeasureSpec.getSize(heightMeasureSpec)
         if (aspectRatio == 0f) {
             setMeasuredDimension(width, height)
         } else {

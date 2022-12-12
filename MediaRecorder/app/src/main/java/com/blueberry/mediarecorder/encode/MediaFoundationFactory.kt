@@ -12,7 +12,7 @@ object MediaFoundationFactory {
 
     private const val FRAME_RATE = 15
     private const val IFRAME_INTERVAL = 10
-    private const val VIDEO_BIT_RATE = 2000000
+    private const val VIDEO_BIT_RATE = 396000
     private const val AUDIO_BIT_RATE = 128000
 
     private const val SAMPLE_RATE = 44100

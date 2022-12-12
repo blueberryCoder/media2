@@ -47,7 +47,7 @@ class AudioEncoderThread(
                 audioCodec.releaseOutputBuffer(outputBufferIndex, false)
             } else if (outputBufferIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
                 Log.i(TAG, "run: outputBufferIndex:${outputBufferIndex}")
-                muxerMp4.addAudioTrack(audioCodec.getOutputFormat())
+                muxerMp4.addAudioTrack(audioCodec.outputFormat)
             }
         }
         mStopCallback?.invoke()

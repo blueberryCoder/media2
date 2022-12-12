@@ -27,16 +27,14 @@ class VideoEncoderThread(
             val bufferInfo = MediaCodec.BufferInfo()
             val outputIndex = videoCodec.dequeueOutputBuffer(bufferInfo, TIME_OUT)
             if (outputIndex >= 0) {
+                val currentTime = timeSync.getVideoPts()
+                Log.i(TAG, "run: bufferInfo pts : ${bufferInfo.presentationTimeUs}")
                 val outputBuffer = videoCodec.getOutputBuffer(outputIndex) ?: continue
-                if (timeSync.audioUpdated()) {
-                    bufferInfo.presentationTimeUs =
-                        timeSync.getVideoPts(bufferInfo.presentationTimeUs)
-                    muxerMp4.writeVideoSampleData(outputBuffer, bufferInfo)
-                }
-                videoCodec.releaseOutputBuffer(outputIndex, false)
-                Log.i(TAG, "consume output buffer index $outputIndex ")
+                muxerMp4.writeVideoSampleData(outputBuffer, bufferInfo)
+                videoCodec.releaseOutputBuffer(outputIndex, currentTime)
+                Log.i(TAG, "consume output buffer index $outputIndex release pts $currentTime")
             } else if (outputIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
-                muxerMp4.addVideoTrack(videoCodec.getOutputFormat())
+                muxerMp4.addVideoTrack(videoCodec.outputFormat)
             }
         }
 

@@ -6,24 +6,13 @@ package com.blueberry.mediarecorder.encode
  */
 class TimeSync {
 
-    private var fistAudioPts: Long? = null
-    private var diff: Long? = null
-
     fun getAudioPts(): Long {
-        val time = currentMicrosecond()
-        if (fistAudioPts == null) {
-            fistAudioPts = time
-        }
-        return time
+        return currentMicrosecond()
     }
 
-    fun audioUpdated(): Boolean = fistAudioPts != null
-
-    fun getVideoPts(pts: Long): Long {
-        if (diff == null) {
-            diff =  pts - fistAudioPts!!
-        }
-        return pts+ diff!!
+    fun getVideoPts(): Long {
+        return currentMicrosecond()
     }
-    private fun currentMicrosecond() = System.nanoTime() / 1000
+
+    fun currentMicrosecond() = System.nanoTime() / 1000
 }
