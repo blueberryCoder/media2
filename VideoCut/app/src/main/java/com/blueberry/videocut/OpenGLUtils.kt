@@ -3,6 +3,7 @@ package com.blueberry.videocut
 import android.opengl.GLES11Ext
 import android.opengl.GLES20
 import android.util.Log
+import java.lang.RuntimeException
 import javax.microedition.khronos.opengles.GL10
 
 /**
@@ -14,28 +15,35 @@ object OpenGLUtils {
 
     fun createExternalOESTextureID(): Int {
         val textureArr = intArrayOf(1)
+
         GLES20.glGenTextures(1, textureArr, 0)
-        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_BINDING_EXTERNAL_OES, textureArr[0])
-        GLES20.glTexParameterf(
+        checkError()
+        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureArr[0])
+        checkError()
+        GLES20.glTexParameteri(
             GLES11Ext.GL_TEXTURE_EXTERNAL_OES,
             GL10.GL_TEXTURE_MIN_FILTER,
-            GL10.GL_LINEAR.toFloat()
+            GL10.GL_LINEAR
         )
-        GLES20.glTexParameterf(
+        checkError()
+        GLES20.glTexParameteri(
             GLES11Ext.GL_TEXTURE_EXTERNAL_OES,
             GL10.GL_TEXTURE_MAG_FILTER,
-            GL10.GL_LINEAR.toFloat()
+            GL10.GL_LINEAR
         )
+        checkError()
         GLES20.glTexParameteri(
             GLES11Ext.GL_TEXTURE_EXTERNAL_OES,
             GL10.GL_TEXTURE_WRAP_S,
             GL10.GL_CLAMP_TO_EDGE,
         )
+        checkError()
         GLES20.glTexParameteri(
             GLES11Ext.GL_TEXTURE_EXTERNAL_OES,
             GL10.GL_TEXTURE_WRAP_T,
             GL10.GL_CLAMP_TO_EDGE,
         )
+        checkError()
         return textureArr[0]
     }
 
@@ -43,15 +51,15 @@ object OpenGLUtils {
         val textureArr = intArrayOf(1)
         GLES20.glGenTextures(1, textureArr, 0)
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureArr[0])
-        GLES20.glTexParameterf(
+        GLES20.glTexParameteri(
             GLES20.GL_TEXTURE_2D,
             GL10.GL_TEXTURE_MIN_FILTER,
-            GL10.GL_LINEAR.toFloat()
+            GL10.GL_LINEAR
         )
-        GLES20.glTexParameterf(
+        GLES20.glTexParameteri(
             GLES20.GL_TEXTURE_2D,
             GL10.GL_TEXTURE_MAG_FILTER,
-            GL10.GL_LINEAR.toFloat()
+            GL10.GL_LINEAR
         )
         GLES20.glTexParameteri(
             GLES20.GL_TEXTURE_2D,
@@ -105,5 +113,16 @@ object OpenGLUtils {
             return GLES20.GL_NONE
         }
         return program
+    }
+
+
+    fun clearError() {
+        while(GLES20.glGetError() != 0);
+    }
+    fun checkError() {
+        val error = GLES20.glGetError()
+        if (error != 0) {
+            throw RuntimeException("OpenGL error. error code is $error");
+        }
     }
 }
