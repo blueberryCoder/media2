@@ -4,13 +4,14 @@ import android.media.MediaCodec
 import android.media.MediaFormat
 import android.media.MediaMuxer
 import android.util.Log
+import java.io.FileOutputStream
 import java.nio.ByteBuffer
 
 /**
  * author: muyonggang
  * date: 2022/6/5
  */
-class MediaMuxerMp4(output: String, orientation: Int) {
+class MediaMuxerMp4(output: String, orientation: Int, private val avcPath: String) {
     private val muxer: MediaMuxer
     private var audioTrackIndex: Int? = null
     private var videoTrackIndex: Int? = null
@@ -51,14 +52,24 @@ class MediaMuxerMp4(output: String, orientation: Int) {
 
     fun writeVideoSampleData(byteBuffer: ByteBuffer, bufferInfo: MediaCodec.BufferInfo) {
         if (isStarted) {
+
+            val bytes = ByteArray(bufferInfo.size)
+            val oldPos = byteBuffer.position()
+            byteBuffer.get(bytes, bufferInfo.offset, bufferInfo.size);
+            byteBuffer.position(oldPos)
+            avcFos?.write(bytes)
+
             muxer.writeSampleData(videoTrackIndex ?: return, byteBuffer, bufferInfo)
         }
     }
+
+    private var avcFos: FileOutputStream? = null
 
     private fun tryToStart() {
         if (audioReady && videoReady) {
             muxer.start()
             isStarted = true
+            avcFos = FileOutputStream(avcPath)
         }
     }
 
@@ -71,5 +82,6 @@ class MediaMuxerMp4(output: String, orientation: Int) {
 
     fun release() {
         muxer.release()
+        avcFos?.close()
     }
 }

@@ -164,7 +164,9 @@ constructor(private val context: Context) {
         )
         mMp4Muxer = MediaFoundationFactory.createMuxer(
             CameraUtils.geMp4FilePath(context).absolutePath,
-            mCurCameraInfo?.orientation ?: 0
+            mCurCameraInfo?.orientation ?: 0,
+            CameraUtils.getRecordVideoPath(context).absolutePath
+
         )
         val timeSync = TimeSync()
         if (mVideoEncoder == null) {

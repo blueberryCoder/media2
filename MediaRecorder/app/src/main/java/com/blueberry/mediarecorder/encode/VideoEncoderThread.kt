@@ -23,6 +23,11 @@ class VideoEncoderThread(
     private var mStopCallback: (() -> Unit)? = null
 
     override fun run() {
+        // EGLBoolean eglPresentationTimeANDROID(
+        // EGLDisplay dpy,
+        // EGLSurface surface,
+        // EGLnsecsANDROID time);
+        // https://registry.khronos.org/EGL/extensions/ANDROID/EGL_ANDROID_presentation_time.txt
         while (state == STATE_START) {
             val bufferInfo = MediaCodec.BufferInfo()
             val outputIndex = videoCodec.dequeueOutputBuffer(bufferInfo, TIME_OUT)

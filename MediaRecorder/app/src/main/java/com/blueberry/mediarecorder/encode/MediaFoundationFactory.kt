@@ -18,10 +18,8 @@ object MediaFoundationFactory {
     private const val SAMPLE_RATE = 44100
     private const val CHANNEL_COUNT = 2
 
-    fun createMuxer(
-        filePath: String,orientation:Int
-    ): MediaMuxerMp4 {
-        return MediaMuxerMp4(filePath,orientation)
+    fun createMuxer(filePath: String, orientation: Int, avcPath: String): MediaMuxerMp4 {
+        return MediaMuxerMp4(filePath, orientation, avcPath)
     }
 
     // pcm16bit
